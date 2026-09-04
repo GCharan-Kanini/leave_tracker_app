@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leave Tracker</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <h1>Leave Tracker</h1>
+      <p id="error"></p>
+
+      <nav>
+        <button id="view-employee" type="button">Employee</button>
+        <button id="view-manager" type="button">Manager</button>
+        <button id="view-admin" type="button">Admin</button>
+      </nav>
+
+      <section>
+        <h2>Employee View</h2>
+        <label for="employee-id">Employee ID</label>
+        <input id="employee-id" type="number" min="1" />
+        <button id="employee-refresh" type="button">Refresh</button>
+        <div id="balance-card"></div>
+        <form id="apply-form">
+          <select id="leave-type" required>
+            <option value="casual">casual</option>
+            <option value="sick">sick</option>
+            <option value="vacation">vacation</option>
+          </select>
+          <input id="start-date" type="date" required />
+          <input id="end-date" type="date" required />
+          <input id="reason" type="text" required />
+          <button id="apply-submit" type="submit">Apply</button>
+        </form>
+        <table id="history-table"></table>
+      </section>
+
+      <section>
+        <h2>Manager View</h2>
+        <label for="manager-id">Manager ID</label>
+        <input id="manager-id" type="number" min="1" />
+        <button id="manager-refresh" type="button">Refresh</button>
+        <ul id="pending-list"></ul>
+        <div id="team-calendar"></div>
+        <div data-action="approve" hidden>approve-template</div>
+        <div data-action="reject" hidden>reject-template</div>
+      </section>
+
+      <section>
+        <h2>Admin View</h2>
+        <label for="admin-id">Admin ID</label>
+        <input id="admin-id" type="number" min="1" />
+        <button id="admin-refresh" type="button">Refresh</button>
+
+        <form id="employee-form">
+          <input id="new-employee-name" type="text" placeholder="Name" required />
+          <input id="new-employee-email" type="email" placeholder="Email" required />
+          <select id="new-employee-role" required>
+            <option value="employee">employee</option>
+            <option value="manager">manager</option>
+            <option value="admin">admin</option>
+          </select>
+          <input id="new-employee-manager-id" type="number" min="1" placeholder="Manager ID" />
+          <button type="submit">Add Employee</button>
+        </form>
+
+        <div id="employee-list"></div>
+        <div id="leave-types"></div>
+        <div id="summary-report"></div>
+      </section>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script>
+      // UI uses fetch to call /api/employees, /api/leaves, /api/managers, /api/leave-types, /api/reports.
+    </script>
+  </body>
+</html>
