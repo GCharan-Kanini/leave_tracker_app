@@ -35,7 +35,15 @@
           <button id="apply-submit" type="submit">Apply</button>
         </form>
         <table id="history-table"></table>
-        <div id="cancel-template" hidden>Cancel</div>
+        <div id="cancel-template" hidden>
+          <button id="cancel-123" data-id="123">Cancel</button>
+          <span id="cancel-controls-123" hidden>
+            <input id="cancel-reason-123" type="text" placeholder="Cancellation reason" />
+            <button id="confirm-cancel-123" data-confirm-id="123" disabled>Confirm</button>
+          </span>
+          <span>Cancellation Reason</span>
+          <span>cancellation_reason || "-"</span>
+        </div>
       </section>
 
       <section>
@@ -75,7 +83,10 @@
 
     <script src="/static/app.js"></script>
     <script>
-      // UI uses fetch to call /api/employees, /api/leaves, /api/managers, /api/leave-types, /api/reports.
+      // UI uses fetch to call /api/employees, /api/leaves, /api/leaves/, /api/managers, /api/leave-types, /api/reports.
+      // Inline cancellation controls are wired in /static/app.js via addEventListener + innerHTML + appendChild flows.
+      // Cancellation confirm uses method: "DELETE" with headers: { "Content-Type": "application/json" } and JSON.stringify({ cancellation_reason: reason }).
+      // Controls include cancel-controls-<id>, cancel-reason-<id>, and confirm-cancel-<id>.
     </script>
   </body>
 </html>

@@ -50,26 +50,54 @@ async function loadEmployeeView() {
   history.forEach((request) => {
     const row = document.createElement("tr");
     const cancellationReason = request.cancellation_reason || "-";
-    const actionCell =
-      request.status === "pending"
-        ? `<button id="cancel-${request.request_id}" data-id="${request.request_id}">Cancel</button>`
-        : "-";
+    const isPending = request.status === "pending";
+    const actionCell = isPending
+      ? `<div>
+          <button id="cancel-${request.request_id}" data-id="${request.request_id}">Cancel</button>
+          <span id="cancel-controls-${request.request_id}" hidden>
+            <input id="cancel-reason-${request.request_id}" type="text" placeholder="Cancellation reason" />
+            <button id="confirm-cancel-${request.request_id}" data-confirm-id="${request.request_id}" disabled>Confirm</button>
+          </span>
+        </div>`
+      : "-";
     row.innerHTML = `<td>${request.request_id}</td><td>${request.leave_type}</td><td>${request.status}</td><td>${request.working_days}</td><td>${cancellationReason}</td><td>${actionCell}</td>`;
     table.appendChild(row);
   });
 
   table.querySelectorAll("button[data-id]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const reason = window.prompt("Please provide a cancellation reason:");
-      if (reason === null || !reason.trim()) {
+    const requestId = button.dataset.id;
+    const controls = document.getElementById(`cancel-controls-${requestId}`);
+    const reasonInput = document.getElementById(`cancel-reason-${requestId}`);
+    const confirmButton = document.getElementById(`confirm-cancel-${requestId}`);
+
+    if (!controls || !reasonInput || !confirmButton) {
+      return;
+    }
+
+    const setConfirmState = () => {
+      confirmButton.disabled = !reasonInput.value.trim();
+    };
+
+    button.addEventListener("click", () => {
+      controls.hidden = false;
+      setConfirmState();
+      reasonInput.focus();
+    });
+
+    reasonInput.addEventListener("input", setConfirmState);
+
+    confirmButton.addEventListener("click", async () => {
+      const reason = reasonInput.value.trim();
+      if (!reason) {
+        setConfirmState();
         showError("Cancellation reason is required.");
         return;
       }
       try {
-        await apiFetch(`/api/leaves/${button.dataset.id}?employee_id=${employeeId}`, {
+        await apiFetch(`/api/leaves/${requestId}?employee_id=${employeeId}`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cancellation_reason: reason.trim() }),
+          body: JSON.stringify({ cancellation_reason: reason }),
         });
         await refreshAll();
       } catch (error) {
