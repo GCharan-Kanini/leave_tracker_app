@@ -71,6 +71,7 @@ def initialize_database() -> None:
                 reason TEXT NOT NULL,
                 status TEXT NOT NULL,
                 working_days INTEGER NOT NULL,
+                cancellation_reason TEXT,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 reviewed_by INTEGER,
                 FOREIGN KEY(employee_id) REFERENCES employees(id),
@@ -78,6 +79,11 @@ def initialize_database() -> None:
             )
             """
         )
+
+        cursor.execute("PRAGMA table_info(leave_requests)")
+        leave_request_columns = {row["name"] for row in cursor.fetchall()}
+        if "cancellation_reason" not in leave_request_columns:
+            cursor.execute("ALTER TABLE leave_requests ADD COLUMN cancellation_reason TEXT")
 
         cursor.executemany(
             "INSERT OR IGNORE INTO leave_types(type, allowance) VALUES (?, ?)",

@@ -6,7 +6,7 @@ from datetime import date
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class Role(str, Enum):
@@ -87,7 +87,14 @@ class LeaveHistoryEntry(BaseModel):
     reason: str
     status: str
     working_days: int
+    cancellation_reason: Optional[str] = None
     created_at: str
+
+
+class LeaveCancelRequest(BaseModel):
+    """Request body for canceling a leave request."""
+
+    cancellation_reason: str = Field(min_length=1)
 
 
 class ManagerActionRequest(BaseModel):
