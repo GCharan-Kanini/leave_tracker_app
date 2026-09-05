@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
+from fastapi.testclient import TestClient as FastAPITestClient
 
 from app.db import get_connection, initialize_database
 from app.models import (
@@ -15,6 +17,7 @@ from app.models import (
     EmployeeResponse,
     LeaveApplyRequest,
     LeaveApplyResponse,
+    LeaveCancelRequest,
     LeaveHistoryEntry,
     LeaveTypeEntry,
     LeaveTypeUpdateRequest,
@@ -27,6 +30,21 @@ from app.services import _actor_can_manage, _employee_or_404, calculate_working_
 
 
 app = FastAPI(title="Leave Tracker")
+
+
+def _ensure_testclient_delete_json_support() -> None:
+    """Backfill TestClient.delete(json=...) support for older Starlette versions."""
+    if "json" in inspect.signature(FastAPITestClient.delete).parameters:
+        return
+
+    def _patched_delete(self: FastAPITestClient, url: str, **kwargs: Any) -> Any:
+        """Dispatch DELETE requests through request() so json payloads are accepted."""
+        return self.request("DELETE", url, **kwargs)
+
+    FastAPITestClient.delete = _patched_delete
+
+
+_ensure_testclient_delete_json_support()
 
 
 @app.on_event("startup")
@@ -145,7 +163,7 @@ def my_requests(employee_id: int = Query(...)) -> list[dict[str, Any]]:
     with get_connection() as connection:
         rows = connection.execute(
             """
-            SELECT id, employee_id, leave_type, start_date, end_date, reason, status, working_days, created_at
+            SELECT id, employee_id, leave_type, start_date, end_date, reason, status, working_days, cancellation_reason, created_at
             FROM leave_requests
             WHERE employee_id = ?
             ORDER BY datetime(created_at) DESC, id DESC
@@ -162,6 +180,7 @@ def my_requests(employee_id: int = Query(...)) -> list[dict[str, Any]]:
             "reason": row["reason"],
             "status": row["status"],
             "working_days": row["working_days"],
+            "cancellation_reason": row["cancellation_reason"],
             "created_at": row["created_at"],
         }
         for row in rows
@@ -222,8 +241,12 @@ def reject_leave(request_id: int, payload: ManagerActionRequest) -> dict[str, An
 
 
 @app.delete("/api/leaves/{request_id}")
-def cancel_leave(request_id: int, employee_id: int = Query(...)) -> dict[str, str]:
-    """Cancel the employee's own pending leave request."""
+def cancel_leave(
+    request_id: int,
+    employee_id: int = Query(...),
+    payload: LeaveCancelRequest | None = Body(default=None),
+) -> dict[str, str]:
+    """Cancel the employee's own pending leave request with a required reason."""
     with get_connection() as connection:
         row = connection.execute("SELECT * FROM leave_requests WHERE id = ?", (request_id,)).fetchone()
         if row is None:
@@ -237,7 +260,14 @@ def cancel_leave(request_id: int, employee_id: int = Query(...)) -> dict[str, st
         if request["status"] != "pending":
             raise HTTPException(status_code=409, detail=f"request {request_id} is not pending")
 
-        connection.execute("UPDATE leave_requests SET status = 'cancelled' WHERE id = ?", (request_id,))
+        cancellation_reason = "" if payload is None else payload.cancellation_reason.strip()
+        if not cancellation_reason:
+            raise HTTPException(status_code=422, detail="cancellation_reason is required")
+
+        connection.execute(
+            "UPDATE leave_requests SET status = 'cancelled', cancellation_reason = ? WHERE id = ?",
+            (cancellation_reason, request_id),
+        )
     return {"status": "cancelled"}
 
 

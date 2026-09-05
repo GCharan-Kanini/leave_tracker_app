@@ -174,7 +174,10 @@ def test_cancel_leave_success():
     request_id = apply_response.json()["request_id"]
     
     # Cancel the request
-    response = client.delete(f"/api/leaves/{request_id}?employee_id={employee_id}")
+    response = client.delete(
+        f"/api/leaves/{request_id}?employee_id={employee_id}",
+        json={"cancellation_reason": "No longer needed"},
+    )
     assert response.status_code == 200
 
 def test_cancel_leave_not_pending():
@@ -218,7 +221,10 @@ def test_cancel_leave_not_pending():
     assert approve_response.status_code == 200
     
     # Try to cancel approved request
-    response = client.delete(f"/api/leaves/{request_id}?employee_id={employee_id}")
+    response = client.delete(
+        f"/api/leaves/{request_id}?employee_id={employee_id}",
+        json={"cancellation_reason": "Need to revert approved leave"},
+    )
     assert response.status_code == 409
 
 def test_cancel_leave_not_owner():
@@ -258,5 +264,8 @@ def test_cancel_leave_not_owner():
     request_id = apply_response.json()["request_id"]
     
     # Employee 2 tries to cancel Employee 1's request
-    response = client.delete(f"/api/leaves/{request_id}?employee_id={employee2_id}")
+    response = client.delete(
+        f"/api/leaves/{request_id}?employee_id={employee2_id}",
+        json={"cancellation_reason": "Not my leave"},
+    )
     assert response.status_code == 403

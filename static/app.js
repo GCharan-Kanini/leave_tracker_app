@@ -46,18 +46,30 @@ async function loadEmployeeView() {
 
   const history = await apiFetch(`/api/leaves/myrequests?employee_id=${employeeId}`);
   const table = document.getElementById("history-table");
-  table.innerHTML = `<tr><th>ID</th><th>Type</th><th>Status</th><th>Days</th><th>Action</th></tr>`;
+  table.innerHTML = `<tr><th>ID</th><th>Type</th><th>Status</th><th>Days</th><th>Cancellation Reason</th><th>Action</th></tr>`;
   history.forEach((request) => {
     const row = document.createElement("tr");
-    row.innerHTML = `<td>${request.request_id}</td><td>${request.leave_type}</td><td>${request.status}</td><td>${request.working_days}</td><td><button id="cancel-${request.request_id}" data-id="${request.request_id}">Cancel</button></td>`;
+    const cancellationReason = request.cancellation_reason || "-";
+    const actionCell =
+      request.status === "pending"
+        ? `<button id="cancel-${request.request_id}" data-id="${request.request_id}">Cancel</button>`
+        : "-";
+    row.innerHTML = `<td>${request.request_id}</td><td>${request.leave_type}</td><td>${request.status}</td><td>${request.working_days}</td><td>${cancellationReason}</td><td>${actionCell}</td>`;
     table.appendChild(row);
   });
 
   table.querySelectorAll("button[data-id]").forEach((button) => {
     button.addEventListener("click", async () => {
+      const reason = window.prompt("Please provide a cancellation reason:");
+      if (reason === null || !reason.trim()) {
+        showError("Cancellation reason is required.");
+        return;
+      }
       try {
         await apiFetch(`/api/leaves/${button.dataset.id}?employee_id=${employeeId}`, {
           method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cancellation_reason: reason.trim() }),
         });
         await refreshAll();
       } catch (error) {
