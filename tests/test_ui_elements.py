@@ -70,5 +70,18 @@ def test_error_element_id():
     response = client.get("/")
     assert response.status_code == 200
     html_content = response.text
-    
+
     assert 'id="error"' in html_content, "Missing error element ID"
+
+
+def test_inline_cancellation_control_markers_present():
+    """Test served page exposes inline cancellation control markers."""
+    response = client.get("/")
+    assert response.status_code == 200
+    html_content = response.text
+
+    assert 'id="cancel-123"' in html_content
+    assert 'id="cancel-controls-123"' in html_content
+    assert 'id="cancel-reason-123"' in html_content
+    assert 'id="confirm-cancel-123"' in html_content
+    assert 'disabled' in html_content.lower()
