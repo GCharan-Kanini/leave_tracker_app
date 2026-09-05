@@ -1,0 +1,12 @@
+<html>
+  <body>
+    <h1>Cancel Request</h1>
+    <p>Current status: {status}</p>
+    {error_message}
+    <form method="post">
+      <label for="cancellation_reason">Cancellation Reason</label>
+      <textarea id="cancellation_reason" name="cancellation_reason">{cancellation_reason_value}</textarea>
+      <button type="submit">Confirm Cancel</button>
+    </form>
+  </body>
+</html>
